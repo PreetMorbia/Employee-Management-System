@@ -1,0 +1,277 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewData["Title"] = "Tasks";
+}
+
+<head>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular-route.js"></script>
+
+
+
+    <script>
+        var app = angular.module("App", []);
+        app.controller("TaskCtrl", function ($scope, $http, $httpParamSerializer) {
+            $scope.create = true;
+            $scope.GetAllAssignedTasks = function () {
+                $http({
+                    method: "Get",
+                    url: "http://localhost:62740/Task/GetAssignedTask",
+                }).then(function (res) {
+                    $scope.Tasks = res.data;
+                }, function () {
+                    alert("Error !!");
+                })
+            };
+
+            $scope.setAdd = function () {
+                $scope.create = true;
+                angular.copy({}, $scope.TaskData);
+
+            };
+
+            $scope.setUpdate = function (TaskId) {
+                $scope.create = false;
+                $scope.GetTask(TaskId);
+            };
+
+
+
+
+            $scope.GetAllTasks = function () {
+                $http({
+                    method: "Get",
+                    url: "http://localhost:62740/Task/GetAllTasks",
+                }).then(function (res) {
+                    $scope.Tasks = res.data;
+                }, function () {
+                    alert("Error !!");
+                })
+            };
+
+            $scope.GetEmployees = function () {
+                $http({
+                    method: "Post",
+                    url: "http://localhost:62740/Task/GetEmployees",
+                }).then(function (res) {
+                    if (res.data.success) {
+                        $scope.Employees = res.data.data;
+                    }
+                    else{
+                        alert("Error unable to fetch Employees list !!");
+                    }
+                }, function () {
+                    alert("Error !!");
+                })
+            };
+
+
+            $scope.AddOrUpdateTask = function (TaskData) {
+                
+                if ($scope.create == true) {
+                    url = "http://localhost:62740/Task/CreateTask";
+                    onSuccessAlertMsg = "Success : Task Added Successfully";
+                }
+                else {
+                    url = "http://localhost:62740/Task/UpdateTask";
+                    onSuccessAlertMsg = "Success : Task Updated Successfully";
+                }
+                $http({
+                    method: "Post",
+                    url: url,
+                    data: $httpParamSerializer(TaskData),
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(function (res) {
+                    $scope.insertStatus = res.data;
+                    alert(onSuccessAlertMsg);
+                    $scope.GetAllTasks();
+
+                }, function () {
+                    alert("Error !!");
+                })
+            };
+
+            $scope.GetTask = function (TaskId) {
+                //console.log(TaskData);
+                var popupForm = document.getElementById("myModal");
+
+                $http({
+                    method: "Get",
+                    url: "http://localhost:62740/Task/GetTaskByID",
+                    params: { "TaskId": TaskId },
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(function (res) {
+                    $scope.TaskData = res.data.data;
+                    //alert(res.data);
+                    console.log($scope.TaskData);
+
+                    // $route.reload();
+
+                }, function () {
+                    alert("Error !!");
+                })
+            };
+
+
+            $scope.DeleteTask = function (TaskId) {
+                if (confirm(`Are you sure You want to delete the task with taskId : ${TaskId}`) == true) {
+                    $http({
+                        method: "Delete",
+                        url: "http://localhost:62740/Task/DeleteTask",
+                        params: { "TaskId": TaskId },
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }).then(function (res) {
+                        $scope.deleteStatus = res.data.success;
+                        if ($scope.deleteStatus == true) {
+                            alert("Task Deleted Successfully");
+                        }
+                        $scope.GetAllTasks();
+                    }, function () {
+                        alert("Error !!");
+                    })
+                }
+            };
+
+
+
+        })
+
+    </script>
+    <style>
+
+        .table td {
+            text-align: center;
+            padding: 10px;
+            vertical-align: middle;
+            max-width: 150px;
+            word-wrap: break-word;
+        }
+
+    </style>
+</head>
+
+
+<body ng-app="App" ng-controller="TaskCtrl">
+
+    <div ng-init="GetAllTasks()" class="divList">
+        <div class="d-flex flex-row justify-content-lg-between mb-3">
+            <h2 class="divHead text-center font-weight-bolder">List of Tasks</h2>
+            <a class="btn btn-danger h-75" href="http://localhost:62740/Task/DelayedTasks">Delayed Tasks</a>
+        </div>
+        <div class="d-flex justify-content-between mb-2 rounded">
+            <button class="btn btn-primary" data-toggle="modal" data-target="#myModal" ng-click="setAdd()">Add Task</button>
+            <form class="form-inline">
+                <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+            </form>
+        </div>
+        <table cellpadding="12" class="table table-bordered table-hover">
+            <tr>
+
+                <td class="text-center text-nowrap"><b>Task Name</b></td>
+                <td class="text-center text-nowrap"><b>Task Description</b></td>
+                <td class="text-center text-nowrap"><b>Assigned By</b></td>
+                <td class="text-center text-nowrap"><b>Assigned To</b></td>
+                <td class="text-center text-nowrap"><b>Assigned Date</b> </td>
+                <td><b>Start Date</b></td>
+                <td><b>End Date</b></td>
+                <td><b>Deadline</b></td>
+                <td><b>Status</b></td>
+                <td><b>Priority</b></td>
+                <td><b>Action</b></td>
+
+            </tr>
+
+            <tr ng-repeat="Task in Tasks">
+
+                <td class="text-left">{{Task.taskName}}</td>
+                <td class="text-left">{{Task.taskDescription}}</td>
+                <td>{{Task.assignedByName}}</td>
+                <td>{{Task.assignedToName}}</td>
+                <td>{{Task.formattedAssignedDate}}</td>
+                <td>{{Task.formattedStartDate}}</td>
+                <td> {{Task.formattedEndDate}}</td>
+                <td> {{Task.formattedDeadline}}</td>
+                <td> {{Task.taskStatus}}</td>
+                <td> {{Task.priority}}</td>
+                <td style="width:105px;">
+                    <button class="btn btn-primary m-1 w-100" data-toggle="modal" data-target="#myModal" ng-click="setUpdate(Task.taskId)">Edit</button>
+                    <button class="btn btn-danger m-1 w-100" ng-click="DeleteTask(Task.taskId)">Delete</button>
+                </td>
+
+            </tr>
+
+        </table>
+    </div>
+
+    <!--  "Add-Task" Form -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="userModalLabel" aria-hidden="true" ng-init="GetEmployees()">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel" ng-if="create == true">Add Task</h5>
+                    <h5 class="modal-title" id="userModalLabel" ng-if="!create">Update Task</h5>
+
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="createTaskForm" method="post" ng-model="TaskData">
+                        <div class="form-group">
+                            <label for="TaskName">Task Name</label>
+                            <input type="text" class="form-control" id="TaskName" name="TaskName" required maxlength="100" ng-model="TaskData.taskName">
+                        </div>
+                        <div class="form-group">
+                            <label for="TaskDescription">Task Description</label>
+                            <input type="text" class="form-control" id="TaskDescription" name="TaskDescription" required maxlength="250" ng-model="TaskData.taskDescription">
+                        </div>
+                        <div class="form-group">
+                            <label for="EmployeeName">Assigned To</label>
+                            <select name="EmployeeName" id="EmployeeName" class="form-control" ng-model="TaskData.assignedTo">
+                                <option selected disabled ng-if="create" value="Select Employee">Select Employee</option>
+                                <option ng-repeat="emp in Employees " value="{{ emp.siteUserId}}" ng-selected="emp.siteUserId == TaskData.assignedTo">
+                                    {{emp.firstName + " " + emp.lastName}}
+                                </option>
+                            </select>
+                        </div>
+
+
+
+                        <div class="form-group">
+                            <label for="StartDate">Start Date</label>
+                            <input type="date" id="StartDate" name="StartDate" class="form-control" ng-model="TaskData.startDate" value={{TaskData.formattedStartDate}}>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="Deadline">Deadline</label>
+                            <input type="date" id="Deadline" name="Deadline" class="form-control" ng-model="TaskData.deadline" value={{TaskData.formattedDeadline}}>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="Priority">Priority</label>
+                            <select id="Priority" name="Priority" class="form-control" ng-model="TaskData.priority">
+                                <option>High</option>
+                                <option>Medium</option>
+                                <option>Low</option>
+                            </select>
+                        </div>
+
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary" data-dismiss="modal" ng-click="AddOrUpdateTask(TaskData)">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>

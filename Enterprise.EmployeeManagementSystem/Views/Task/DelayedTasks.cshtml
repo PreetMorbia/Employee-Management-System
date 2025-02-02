@@ -1,0 +1,147 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewData["Title"] = "Delayed Tasks";
+}
+
+
+
+<head>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular-route.js"></script>
+
+    <script>
+        var app = angular.module("delayedTasks", []);
+        app.controller("DelayedTaskCtrl", function ($scope, $http, $httpParamSerializer) {
+            $scope.show = false;
+            $scope.GetEmployeesWithDelayedTasks = function () {
+                $http({
+                    method: "Post",
+                    url: "http://localhost:62740/Task/GetUsersWithDelayedTasks",
+                }).then(function (res) {
+                    $scope.Employees = res.data;
+                    // console.log($scope.Employees);
+                }, function () {
+                    alert("Error !!");
+                })
+            };
+
+
+            $scope.GetDelayedTasks = function (assignedTo) {
+                $scope.show = true;
+                $http({
+                    method: "Get",
+                    url: "http://localhost:62740/Task/GetDelayedTasksOfUser",
+                    params: { "userId": assignedTo },
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(function (res) {
+                    $scope.Tasks = res.data;
+                    // console.log($scope.Tasks);
+                }, function () {
+                    alert("Error !!");
+                })
+            };
+
+            $scope.SendAlert = function (taskId) {
+                // $scope.show = true;
+                $http({
+                    method: "Get",
+                    url: "http://localhost:62740/Task/SendEmailAlert",
+                    params: { "taskId": taskId },
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(function (res) {
+                    $scope.emailStatus = res.data.success;
+                    console.log($scope.emailStatus);
+                    if($scope.emailStatus)
+                    {
+                        alert("Email alert sent !!");
+                    }
+                    else{
+                        alert("Unable to send Email alert !! \n Please try again later !!");
+                    }
+
+                }, function () {
+                    alert("Error !!");
+                })
+            };
+
+        })
+
+    </script>
+
+
+    <style>
+
+        .table td {
+            text-align: center;
+            padding: 10px;
+            vertical-align: middle;
+            max-width: 150px;
+            word-wrap: break-word;
+        }
+
+    </style>
+
+</head>
+
+
+<body ng-app="delayedTasks" ng-controller="DelayedTaskCtrl">
+
+
+    <h2>Delayed Tasks</h2>
+    <div class="form-row align-items-center ">
+        <div class="form-group w-50 col-auto" ng-init="GetEmployeesWithDelayedTasks()">
+            <label for="EmployeeName">Employee Name</label>
+            <select name="EmployeeName" id="EmployeeName" class="form-control" ng-model="TaskData.assignedTo">
+                <option ng-repeat="emp in Employees " value="{{emp.siteUserId}}">
+                    {{emp.firstName+" "+emp.lastName}}
+                </option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3 col-auto ml-2" ng-click="GetDelayedTasks(TaskData.assignedTo)">Submit</button>
+    </div>
+
+
+
+
+
+
+    <!-- Delayed Tasks Table -->
+    <table cellpadding="12" class="table table-bordered table-hover" ng-show="show">
+        <tr>
+
+            <td class="text-center text-nowrap"><b>Task Name</b></td>
+            <td class="text-center text-nowrap"><b>Task Description</b></td>
+            <td class="text-center text-nowrap"><b>Assigned By</b></td>
+            <td class="text-center text-nowrap"><b>Assigned Date</b> </td>
+            <td><b>Start Date</b></td>
+            <td><b>Deadline</b></td>
+            <td><b>Priority</b></td>
+            <td><b>Action</b></td>
+
+        </tr>
+
+        <tr ng-repeat="Task in Tasks">
+
+            <td class="text-left">{{Task.taskName}}</td>
+            <td class="text-left">{{Task.taskDescription}}</td>
+            <td>{{Task.assignedByName}}</td>
+            <td>{{Task.formattedAssignedDate}}</td>
+            <td>{{Task.formattedStartDate}}</td>
+            <td> {{Task.formattedDeadline}}</td>
+            <td> {{Task.priority}}</td>
+            <td>
+                <button class="btn btn-danger" ng-click="SendAlert(Task.taskId)">Send Alert</button>
+            </td>
+
+        </tr>
+
+    </table>
+
+</body>
